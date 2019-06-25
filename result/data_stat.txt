@@ -18,4 +18,4 @@ simple noHMM
 
 simple noHMM 3-gram:
 candidate: simplest 1657634/1000 = 1657 (22125 * 95)
-candidate: 2-gram dict: 1288112/1000 = 1281
+candidate: 2-gram dict: 1289765/1000 = 1289
