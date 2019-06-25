@@ -4,10 +4,8 @@ import jieba
 import json
 import jieba.posseg as pseg
 
-from snownlp import SnowNLP
+#from snownlp import SnowNLP
 from argparse import ArgumentParser
-
-
 
 def is_chinese(char):
     if char >= '\u4e00' and char <= '\u9fa5':
@@ -129,6 +127,7 @@ def data_seg(data_json, save_json):
     '''with open(save_json, 'w', encoding='utf-8') as f:
         json.dump(data, f)'''
 
+# format: dict {'id' : {'text': str, 'answer': [[1, 我], [2, 是]], 'cand': [[[1, [我, 你]]], [[2, [没, 有]], [3, [好]]]]}}
 def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
     total_count, hit_count, cand_count, total_chars = 0., 0., 0., 0.
     # thu1 = thulac.thulac(seg_only=True)  # 默认模式
@@ -147,6 +146,7 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
         answer_index = [p[0] for p in sample['answer']]
         total_count += len(answer_index)
         candidates = []
+        last_index = 0
         for i, word in enumerate(seg_list):
             # count hit mubers
             '''if len(word) == 1 and is_chinese(word):
@@ -178,78 +178,184 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                 if index in anwser_index or index+1 in anwser_index or index+2 in anwser_index:
                     hit_count += 1'''
             # numerate all candidates
-            if len(word) == 1 and is_chinese(word) and sample['text'][index - 1] in cfs_dict.keys():
-                # two consecutive single characters
-                if i == 0:
-                    if len(seg_list[i + 1]) == 1:
-                        candidates.append([index, cfs_dict[sample['text'][index - 1]]])
-                        total_cand_count += len(cfs_dict[sample['text'][index - 1]])
-                elif i == len(seg_list) - 1:
-                    if len(seg_list[i - 1]) == 1:
-                        candidates.append([index, cfs_dict[sample['text'][index - 1]]])
-                        total_cand_count += len(cfs_dict[sample['text'][index - 1]])
-                else:
-                    if len(seg_list[i + 1]) == 1 or len(seg_list[i - 1]) == 1:
-                        candidates.append([index, cfs_dict[sample['text'][index - 1]]])
-                        total_cand_count += len(cfs_dict[sample['text'][index - 1]])
-            if len(word) == 2 and word not in vocab_dict:
-                if sample['text'][index - 1] in cfs_dict.keys():
-                    candidate = []
-                    for cand in cfs_dict[sample['text'][index - 1]]:
-                        if cand + sample['text'][index] in vocab_dict:
-                            total_cand_count += 1
-                            candidate.append(cand)
-                    candidates.append([index, candidate])
-                if sample['text'][index] in cfs_dict.keys():
-                    candidate = []
-                    for cand in cfs_dict[sample['text'][index]]:
-                        if sample['text'][index - 1] + cand in vocab_dict:
-                            total_cand_count += 1
-                            candidate.append(cand)
-                    candidates.append([index + 1, candidate])
-            if len(word) == 3 and word not in vocab_dict:
-                if sample['text'][index - 1] in cfs_dict.keys():
-                    candidate = []
-                    for cand in cfs_dict[sample['text'][index - 1]]:
-                        if cand + sample['text'][index] + sample['text'][index + 1] in vocab_dict:
-                            total_cand_count += 1
-                            candidate.append(cand)
-                    candidates.append([index, candidate])
-                if sample['text'][index] in cfs_dict.keys():
-                    candidate = []
-                    for cand in cfs_dict[sample['text'][index]]:
-                        if sample['text'][index - 1] + cand + sample['text'][index + 1] in vocab_dict:
-                            total_cand_count += 1
-                            candidate.append(cand)
-                    candidates.append([index+1, candidate])
-                if sample['text'][index + 1] in cfs_dict.keys():
-                    candidate = []
-                    for cand in cfs_dict[sample['text'][index + 1]]:
-                        if sample['text'][index - 1] + sample['text'][index] + cand in vocab_dict:
-                            total_cand_count += 1
-                            candidate.append(cand)
-                    candidates.append([index+2, candidate])
-
+            if config.cand_choose == 'single':
+                if len(word) == 1 and is_chinese(word) and sample['text'][index - 1] in cfs_dict.keys():
+                    # two consecutive single characters
+                    if i == 0:
+                        if len(seg_list[i + 1]) == 1:
+                            candidates.append([[index, cfs_dict[sample['text'][index - 1]]]])
+                            total_cand_count += len(cfs_dict[sample['text'][index - 1]])
+                    elif i == len(seg_list) - 1:
+                        if len(seg_list[i - 1]) == 1:
+                            candidates.append([[index, cfs_dict[sample['text'][index - 1]]]])
+                            total_cand_count += len(cfs_dict[sample['text'][index - 1]])
+                    else:
+                        if len(seg_list[i + 1]) == 1 or len(seg_list[i - 1]) == 1:
+                            candidates.append([[index, cfs_dict[sample['text'][index - 1]]]])
+                            total_cand_count += len(cfs_dict[sample['text'][index - 1]])
+                if len(word) == 2 and word not in vocab_dict:
+                    all_cand = []
+                    if sample['text'][index - 1] in cfs_dict.keys():
+                        candidate = []
+                        for cand in cfs_dict[sample['text'][index - 1]]:
+                            if cand + sample['text'][index] in vocab_dict:
+                                total_cand_count += 1
+                                candidate.append(cand)
+                        if candidate:
+                            all_cand.append([index, candidate])
+                    if sample['text'][index] in cfs_dict.keys():
+                        candidate = []
+                        for cand in cfs_dict[sample['text'][index]]:
+                            if sample['text'][index - 1] + cand in vocab_dict:
+                                total_cand_count += 1
+                                candidate.append(cand)
+                        if candidate:
+                            all_cand.append([index+1, candidate])
+                    if all_cand:
+                        candidates.append(all_cand)
+                if len(word) == 3 and word not in vocab_dict:
+                    all_cand = []
+                    if sample['text'][index - 1] in cfs_dict.keys():
+                        candidate = []
+                        for cand in cfs_dict[sample['text'][index - 1]]:
+                            if cand + sample['text'][index] + sample['text'][index + 1] in vocab_dict:
+                                total_cand_count += 1
+                                candidate.append(cand)
+                        if candidate:
+                            all_cand.append([index, candidate])
+                    if sample['text'][index] in cfs_dict.keys():
+                        candidate = []
+                        for cand in cfs_dict[sample['text'][index]]:
+                            if sample['text'][index - 1] + cand + sample['text'][index + 1] in vocab_dict:
+                                total_cand_count += 1
+                                candidate.append(cand)
+                        if candidate:
+                            all_cand.append([index+1, candidate])
+                    if sample['text'][index + 1] in cfs_dict.keys():
+                        candidate = []
+                        for cand in cfs_dict[sample['text'][index + 1]]:
+                            if sample['text'][index - 1] + sample['text'][index] + cand in vocab_dict:
+                                total_cand_count += 1
+                                candidate.append(cand)
+                        if candidate:
+                            all_cand.append([index+2, candidate])
+                    if all_cand:
+                        candidates.append(all_cand)
+            elif config.cand_choose == 'consec':
+                if i < last_index:
+                    continue
+                if len(word) == 1 and is_chinese(word):
+                    j = i + 1
+                    while True:
+                        if j < len(seg_list) and len(seg_list[j]) == 1 and is_chinese(seg_list[j]):
+                            j += 1
+                        else:
+                            break
+                    # [i, j] are consecutive single char
+                    if j - i > 1:
+                        all_cands = []
+                        for m in range(i, j):
+                            if seg_list[m] in cfs_dict.keys():
+                                all_cands.append([m+1, cfs_dict[seg_list[m]]])
+                                total_cand_count += len(cfs_dict[seg_list[m]])
+                        candidates.append(all_cands)
+                    last_index = j
+                    index += (j-i)
+                    continue
+                if len(word) == 2 and word not in vocab_dict:
+                    all_cand = []
+                    if sample['text'][index - 1] in cfs_dict.keys():
+                        candidate = []
+                        for cand in cfs_dict[sample['text'][index - 1]]:
+                            if cand + sample['text'][index] in vocab_dict:
+                                total_cand_count += 1
+                                candidate.append(cand)
+                        if candidate:
+                            all_cand.append([index, candidate])
+                    if sample['text'][index] in cfs_dict.keys():
+                        candidate = []
+                        for cand in cfs_dict[sample['text'][index]]:
+                            if sample['text'][index - 1] + cand in vocab_dict:
+                                total_cand_count += 1
+                                candidate.append(cand)
+                        if candidate:
+                            all_cand.append([index+1, candidate])
+                    if all_cand:
+                        candidates.append(all_cand)
+                if len(word) == 3 and word not in vocab_dict:
+                    all_cand = []
+                    if sample['text'][index - 1] in cfs_dict.keys():
+                        candidate = []
+                        for cand in cfs_dict[sample['text'][index - 1]]:
+                            if cand + sample['text'][index] + sample['text'][index + 1] in vocab_dict:
+                                total_cand_count += 1
+                                candidate.append(cand)
+                        if candidate:
+                            all_cand.append([index, candidate])
+                    if sample['text'][index] in cfs_dict.keys():
+                        candidate = []
+                        for cand in cfs_dict[sample['text'][index]]:
+                            if sample['text'][index - 1] + cand + sample['text'][index + 1] in vocab_dict:
+                                total_cand_count += 1
+                                candidate.append(cand)
+                        if candidate:
+                            all_cand.append([index+1, candidate])
+                    if sample['text'][index + 1] in cfs_dict.keys():
+                        candidate = []
+                        for cand in cfs_dict[sample['text'][index + 1]]:
+                            if sample['text'][index - 1] + sample['text'][index] + cand in vocab_dict:
+                                total_cand_count += 1
+                                candidate.append(cand)
+                        if candidate:
+                            all_cand.append([index+2, candidate])
+                    if all_cand:
+                        candidates.append(all_cand)
             index += len(word)
         print(k)
         data[k]['cand'] = candidates
     print(total_cand_count)
 
-    # format: dict {'id' : {'text': str, 'answer': [[1, 我], [2, 是]], 'cand': [[1, [我, 你]], [2, [没, 有]]]}}
     with open(save_path, 'w', encoding='utf-8') as f:
         json.dump(data, f)
 
     # print(hit_count, total_count, cand_count, total_chars, hit_count/total_count, hit_count/cand_count)
 
-def get_lm_result(data):
-    pass
+def get_lm_score(text):
+    return 0
 
-def cal_metric(data, result):
-    ctp, cfp, dtp, dfp, p = 0., 0., 0., 0., 0.
+# format: dict={'id': {'res': [[1, 我], [2, 你]]}}
+def get_result(data_json):
+    with open(data_json, 'r', encoding='utf-8') as f:
+        data = json.load(f)
     for k,v in data.items():
+        v['res'] = []
+        org_text = v['text']
+        for sample in v['cand']:
+            # [[1, [我, 你]], [2, [好]]]
+            sample_index = [p[0] for p in sample]
+            left_index = max(min(sample_index) - 2, 1)
+            right_index = min(max(sample_index) + 2, len(org_text))
+            org_score = get_lm_score(org_text[left_index-1:right_index])
+            max_score = org_score
+            cand_res = None
+            for pos_cand in sample:
+                new_text = list(org_text)
+                for cand in pos_cand[1]:
+                    new_text[[pos_cand[0] - 1]] = cand
+                    new_score = get_lm_score(''.join(new_text))
+                    if new_score > max_score:
+                        max_score = new_score
+                        cand_res = [pos_cand[0], cand]
+            if cand_res:
+                v['res'].append(cand_res)
+    return data
+
+def cal_metric(result):
+    ctp, cfp, dtp, dfp, p = 0., 0., 0., 0., 0.
+    for k,v in result.items():
         p += len(v['answer'])
         true_index = [ans[0] for ans in v['answer']]
-        for cand in result[k]['res']:
+        for cand in v['res']:
             if cand in v['answer']:
                 ctp += 1
             else:
@@ -268,7 +374,6 @@ def cal_metric(data, result):
     print(res)
     return res
 
-
 def get_args():
     parser = ArgumentParser(description='chinese spelling check')
     parser.add_argument('--test_text', type=str, default='data/sighan7csc_release1.0/FinalTest_/FinalTest_SubTask2.txt')
@@ -286,7 +391,8 @@ def get_args():
     parser.add_argument('--parser', type=str, default='jieba')
     parser.add_argument('--simple', type=bool, default=True)
     parser.add_argument('--data_seg_json', type=str, default='data/sighan7_seg_simple.json')
-    parser.add_argument('--data_cand_json', type=str, default='data/sighan7_cand_simple.json')
+    parser.add_argument('--data_cand_json', type=str, default='data/sighan7_cand_consec_simple.json')
+    parser.add_argument('--cand_choose', type=str, default='consec')
     args = parser.parse_args()
     return args
 
@@ -298,21 +404,14 @@ def main():
     #data_seg(config.data_json, config.data_seg_json)
     with open(config.cfs_dict, 'r', encoding='utf-8') as f:
         cfs_dict = json.load(f)
-    choice_count = 0.
-    '''for k,v in cfs_dict.items():
-        choice_count += len(v)
-    print(choice_count/len(cfs_dict.items()))'''
     with open(config.dict_json, 'r', encoding='utf-8') as f:
         vocab_dict = json.load(f)
     print(len(vocab_dict), vocab_dict[15])
     with open(config.data_json, 'r', encoding='utf-8') as f:
         data = json.load(f)
     make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
-    # format: dict={'id': {'res': [[1, 我], [2, 你]]}}
-    result = get_lm_result(config.data_cand_json)
-    cal_metric(data, result)
-
-
+    result = get_result(config.data_cand_json)
+    result = cal_metric(result)
 
 
 if __name__ == '__main__':
