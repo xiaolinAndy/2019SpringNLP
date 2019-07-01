@@ -4,7 +4,7 @@ import jieba
 import json
 import jieba.posseg as pseg
 
-#from snownlp import SnowNLP
+from snownlp import SnowNLP
 from argparse import ArgumentParser
 
 def is_chinese(char):
@@ -14,7 +14,7 @@ def is_chinese(char):
             return False
 
 # format: dict {'id' : {'text': str, 'answer': [[pos, char], [pos, char]]}}
-def process_data(text_name, gt_name, save_name, simple):
+def process_data_7(text_name, gt_name, save_name, simple):
     data = {}
     with open(text_name, 'r', encoding='utf-8') as f:
         for line in f.readlines():
@@ -24,6 +24,7 @@ def process_data(text_name, gt_name, save_name, simple):
             text = ''.join(line.split()[1:])
             if simple:
                 if len(text) != len(SnowNLP(text).han):
+                    print(text)
                     text = "想一想，台北也是我们每天在待的地方，每天在这个大都市来回穿梭，自由走动，但我们可能也不会到公车站牌旁的小巷子里有些什么，或许有一窝狗、猫，在天桥下，又有什么，或许有着一群游名，或者是一群热爱极限运动的舞者，脚踏车、滑板玩家，这些东西都等着我们去发现。"
                     print(text)
                 else:
@@ -43,6 +44,114 @@ def process_data(text_name, gt_name, save_name, simple):
         assert len(data.items()) == 1000
     with open(save_name, 'w', encoding='utf-8') as f:
         json.dump(data, f)
+
+# format: dict {'id' : {'text': str, 'answer': [[pos, char], [pos, char]]}}
+def process_data_8(text_name, gt_name, save_name, simple):
+    data = {}
+    with open(text_name, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            line = line.strip()
+            id = line.split()[0][5:-1]
+            text = ''.join(line.split()[1:])
+            if simple:
+                if len(text) != len(SnowNLP(text).han):
+                    print(text)
+                    han = list(SnowNLP(text).han)
+                    new_han = []
+                    k = 0
+                    for i in range(len(han)):
+                        if i < k:
+                            continue
+                        if i+3 < len(han) and han[i:i+4] == ['公', '共', '汽', '车']:
+                            new_han += ['公', '车']
+                            k = i + 4
+                        else:
+                            new_han += han[i]
+                    new_text = ''.join(new_han)
+                    if len(text) != len(new_text):
+                        han = list(new_text)
+                        new_han = []
+                        k = 0
+                        for i in range(len(han)):
+                            if i < k:
+                                continue
+                            if i + 2 < len(han) and han[i:i + 3] == ['出', '租', '车']:
+                                new_han += ['的', '士']
+                                k = i + 3
+                            else:
+                                new_han += han[i]
+                        new_text = ''.join(new_han)
+                        print(new_text)
+                        if len(text) != len(new_text):
+                            han = list(new_text)
+                            new_han = []
+                            k = 0
+                            for i in range(len(han)):
+                                if i < k:
+                                    continue
+                                if i + 2 < len(han) and han[i:i + 3] == ['因', '特', '网']:
+                                    new_han += ['网', '际', '网', '络']
+                                    k = i + 3
+                                else:
+                                    new_han += han[i]
+                            new_text = ''.join(new_han)
+                            print(new_text)
+                    assert len(text) == len(new_text)
+                    text = new_text
+                else:
+                    text = SnowNLP(text).han
+            data[id] = {'text': text}
+    with open(gt_name, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            line = line.strip().split(', ')
+            answer = []
+            # extract wrong word id and replaced word
+            if line[1] == '0':
+                data[line[0]]['answer'] = []
+            else:
+                for i in range(1, len(line), 2):
+                    if simple:
+                        line[i + 1] = SnowNLP(line[i+1]).han
+                    answer.append([int(line[i]), line[i+1]])
+                data[line[0]]['answer'] = answer
+    with open(save_name, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
+
+def process_data_14(text_name, gt_name, save_name, simple):
+    data = {}
+    with open(text_name, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            line = line.strip()
+            id = line.split()[0][-10:-1]
+            print(id)
+            text = ''.join(line.split()[1:])
+            if simple:
+                if len(text) != len(SnowNLP(text).han):
+                    print(text)
+                    text = "想一想，台北也是我们每天在待的地方，每天在这个大都市来回穿梭，自由走动，但我们可能也不会到公车站牌旁的小巷子里有些什么，或许有一窝狗、猫，在天桥下，又有什么，或许有着一群游名，或者是一群热爱极限运动的舞者，脚踏车、滑板玩家，这些东西都等着我们去发现。"
+                    print(text)
+                else:
+                    text = SnowNLP(text).han
+            data[id] = {'text': text}
+            exit()
+        #assert len(data.items()) == 1100
+    with open(gt_name, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            line = line.strip().split(', ')
+            answer = []
+            # extract wrong word id and replaced word
+            if len(line)[1] == '0':
+                data[line[0]]['answer'] = []
+            else:
+                for i in range(1, len(line), 2):
+                    if simple:
+                        line[i + 1] = SnowNLP(line[i+1]).han
+                    answer.append([int(line[i]), line[i+1]])
+                data[line[0]]['answer'] = answer
+        #assert len(data.items()) == 1100
+    with open(save_name, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
+
 
 # format: list [word1, word2, ...]
 def process_dict(dict_path, save_path, simple):
@@ -104,28 +213,29 @@ def data_seg(data_json, save_json):
         answer_index = sorted(answer_index)
         for i, index in enumerate(answer_index):
             if i > 0 and answer_index[i] - answer_index[i-1] < 3:
-                print(seg_list, v['answer'])
+                #print(seg_list, v['answer'])
                 near_count += 1
         label_index = []
         index = 1
         answer_p = 0
-        for i, word in enumerate(seg_list):
-            if index <= answer_index[answer_p] and index + len(word) > answer_index[answer_p]:
-                label_index.append(i)
-                answer_p += 1
-                if answer_p == len(answer_index):
-                    break
-            index += len(word)
+        if answer_index:
+            for i, word in enumerate(seg_list):
+                if index <= answer_index[answer_p] and index + len(word) > answer_index[answer_p]:
+                    label_index.append(i)
+                    answer_p += 1
+                    if answer_p == len(answer_index):
+                        break
+                index += len(word)
 
         data[k]['seg'] = seg_list
         data[k]['pos'] = pos
         data[k]['len'] = len_list
         data[k]['label'] = label_index
         assert len(seg_list) == len(pos)
-        assert len(label_index) == len(answer_index)
+        #assert len(label_index) == len(answer_index)
     print(near_count)
-    '''with open(save_json, 'w', encoding='utf-8') as f:
-        json.dump(data, f)'''
+    with open(save_json, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
 
 # format: dict {'id' : {'text': str, 'answer': [[1, 我], [2, 是]], 'cand': [[[1, [我, 你]]], [[2, [没, 有]], [3, [好]]]]}}
 def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
@@ -258,7 +368,8 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                             if seg_list[m] in cfs_dict.keys():
                                 all_cands.append([m+1, cfs_dict[seg_list[m]]])
                                 total_cand_count += len(cfs_dict[seg_list[m]])
-                        candidates.append(all_cands)
+                        if all_cands:
+                            candidates.append(all_cands)
                     last_index = j
                     index += (j-i)
                     continue
@@ -341,7 +452,7 @@ def get_result(data_json):
             for pos_cand in sample:
                 new_text = list(org_text)
                 for cand in pos_cand[1]:
-                    new_text[[pos_cand[0] - 1]] = cand
+                    new_text[pos_cand[0] - 1] = cand
                     new_score = get_lm_score(''.join(new_text))
                     if new_score > max_score:
                         max_score = new_score
@@ -398,10 +509,12 @@ def get_args():
 
 def main():
     config = get_args()
-    #process_data(config.test_text, config.test_gt, config.data_json, config.simple)
+    #process_data_7(config.test_text, config.test_gt, config.data_json, config.simple)
+    #process_data_8(config.test_text, config.test_gt, config.data_json, config.simple)
+    #process_data_8(config.test_text, config.test_gt, config.data_json, config.simple)
     #process_dict(config.dict, config.dict_json, config.simple)
     #process_cfs(config.cfs_pro, config.cfs_shape, config.cfs_dict, config.simple)
-    #data_seg(config.data_json, config.data_seg_json)
+    data_seg(config.data_json, config.data_seg_json)
     with open(config.cfs_dict, 'r', encoding='utf-8') as f:
         cfs_dict = json.load(f)
     with open(config.dict_json, 'r', encoding='utf-8') as f:
@@ -409,9 +522,9 @@ def main():
     print(len(vocab_dict), vocab_dict[15])
     with open(config.data_json, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
-    result = get_result(config.data_cand_json)
-    result = cal_metric(result)
+    #make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
+    #result = get_result(config.data_cand_json)
+    #result = cal_metric(result)
 
 
 if __name__ == '__main__':
