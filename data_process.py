@@ -4,7 +4,9 @@ import jieba
 import json
 import jieba.posseg as pseg
 
-from snownlp import SnowNLP
+from bs4 import BeautifulSoup
+from word2vec_lm import get_lm_score, getEmbed
+#from snownlp import SnowNLP
 from argparse import ArgumentParser
 
 def is_chinese(char):
@@ -117,8 +119,12 @@ def process_data_8(text_name, gt_name, save_name, simple):
     with open(save_name, 'w', encoding='utf-8') as f:
         json.dump(data, f)
 
-def process_data_14(text_name, gt_name, save_name, simple):
+def process_data_8_train(text_name, save_name, simple):
     data = {}
+    soup = BeautifulSoup(text_name, "lxml")
+    essays = soup.find_all('ESSAY')
+    for essay in essays:
+        text = essays.find('TEXT')
     with open(text_name, 'r', encoding='utf-8') as f:
         for line in f.readlines():
             line = line.strip()
@@ -431,11 +437,9 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
 
     # print(hit_count, total_count, cand_count, total_chars, hit_count/total_count, hit_count/cand_count)
 
-def get_lm_score(text):
-    return 0
 
 # format: dict={'id': {'res': [[1, 我], [2, 你]]}}
-def get_result(data_json):
+def get_result(data_json, embed):
     with open(data_json, 'r', encoding='utf-8') as f:
         data = json.load(f)
     for k,v in data.items():
@@ -444,16 +448,17 @@ def get_result(data_json):
         for sample in v['cand']:
             # [[1, [我, 你]], [2, [好]]]
             sample_index = [p[0] for p in sample]
-            left_index = max(min(sample_index) - 2, 1)
-            right_index = min(max(sample_index) + 2, len(org_text))
-            org_score = get_lm_score(org_text[left_index-1:right_index])
+            left_index = max(min(sample_index) - 3, 1)
+            right_index = min(max(sample_index) + 3, len(org_text))
+            print(org_text[left_index-1:right_index])
+            org_score = get_lm_score(embed, org_text[left_index-1:right_index])
             max_score = org_score
             cand_res = None
             for pos_cand in sample:
                 new_text = list(org_text)
                 for cand in pos_cand[1]:
                     new_text[pos_cand[0] - 1] = cand
-                    new_score = get_lm_score(''.join(new_text))
+                    new_score = get_lm_score(embed, ''.join(new_text))
                     if new_score > max_score:
                         max_score = new_score
                         cand_res = [pos_cand[0], cand]
@@ -504,6 +509,7 @@ def get_args():
     parser.add_argument('--data_seg_json', type=str, default='data/sighan7_seg_simple.json')
     parser.add_argument('--data_cand_json', type=str, default='data/sighan7_cand_consec_simple.json')
     parser.add_argument('--cand_choose', type=str, default='consec')
+    parser.add_argument('--lm', type=str, default='data/sgns.baidubaike.bigram-char')
     args = parser.parse_args()
     return args
 
@@ -514,7 +520,7 @@ def main():
     #process_data_8(config.test_text, config.test_gt, config.data_json, config.simple)
     #process_dict(config.dict, config.dict_json, config.simple)
     #process_cfs(config.cfs_pro, config.cfs_shape, config.cfs_dict, config.simple)
-    data_seg(config.data_json, config.data_seg_json)
+    #data_seg(config.data_json, config.data_seg_json)
     with open(config.cfs_dict, 'r', encoding='utf-8') as f:
         cfs_dict = json.load(f)
     with open(config.dict_json, 'r', encoding='utf-8') as f:
@@ -523,8 +529,9 @@ def main():
     with open(config.data_json, 'r', encoding='utf-8') as f:
         data = json.load(f)
     #make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
-    #result = get_result(config.data_cand_json)
-    #result = cal_metric(result)
+    config.embeddings_index = getEmbed(config.lm)
+    result = get_result(config.data_cand_json, config.embeddings_index)
+    result = cal_metric(result)
 
 
 if __name__ == '__main__':
