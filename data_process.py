@@ -5,7 +5,8 @@ import json
 import jieba.posseg as pseg
 
 from bs4 import BeautifulSoup
-from word2vec_lm import get_lm_score, getEmbed
+from word2vec_lm import*
+
 #from snownlp import SnowNLP
 from argparse import ArgumentParser
 
@@ -250,6 +251,8 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
     # test for segment feasibility
     total_cand_count = 0
     for k, v in data.items():
+        '''if int(k) > 420:
+            break'''
         sample = v
         total_chars += len(sample['text'])
         if config.parser == 'jieba':
@@ -372,12 +375,14 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                         all_cands = []
                         for m in range(i, j):
                             if seg_list[m] in cfs_dict.keys():
-                                all_cands.append([m+1, cfs_dict[seg_list[m]]])
+                                all_cands.append([index, cfs_dict[seg_list[m]]])
                                 total_cand_count += len(cfs_dict[seg_list[m]])
+                            index += 1
                         if all_cands:
                             candidates.append(all_cands)
+                    else:
+                        index += 1
                     last_index = j
-                    index += (j-i)
                     continue
                 if len(word) == 2 and word not in vocab_dict:
                     all_cand = []
@@ -443,27 +448,34 @@ def get_result(data_json, embed):
     with open(data_json, 'r', encoding='utf-8') as f:
         data = json.load(f)
     for k,v in data.items():
+        '''if int(k) > 410:
+            break'''
         v['res'] = []
         org_text = v['text']
+        print('原文本：', org_text, jieba.lcut(org_text, HMM=False))
         for sample in v['cand']:
             # [[1, [我, 你]], [2, [好]]]
+            print(sample)
             sample_index = [p[0] for p in sample]
             left_index = max(min(sample_index) - 3, 1)
             right_index = min(max(sample_index) + 3, len(org_text))
-            print(org_text[left_index-1:right_index])
-            org_score = get_lm_score(embed, org_text[left_index-1:right_index])
+            org_score = SentScore(embed, org_text[left_index-1:right_index])
+            print('文本窗口：', org_text[left_index - 1:right_index], org_score)
             max_score = org_score
             cand_res = None
             for pos_cand in sample:
                 new_text = list(org_text)
                 for cand in pos_cand[1]:
                     new_text[pos_cand[0] - 1] = cand
-                    new_score = get_lm_score(embed, ''.join(new_text))
+                    new_score = SentScore(embed, ''.join(new_text[left_index - 1:right_index]))
+                    #print('Change: ', ''.join(new_text[left_index - 1:right_index]), new_score)
                     if new_score > max_score:
                         max_score = new_score
                         cand_res = [pos_cand[0], cand]
+                        #cand_res = [pos_cand[0], cand, ''.join(new_text[left_index - 1:right_index]), max_score]
             if cand_res:
                 v['res'].append(cand_res)
+                print(k, cand_res)
     return data
 
 def cal_metric(result):
@@ -530,6 +542,13 @@ def main():
         data = json.load(f)
     #make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
     config.embeddings_index = getEmbed(config.lm)
+    s1 = "人不同凡想的成就呢"
+    s2 = "人不同凡响的成就呢"
+    s3 = "人不同凡想怕成就呢"
+    #print(jieba.lcut(s1, HMM=False))
+    #print(jieba.lcut(s2, HMM=False))
+    #print(jieba.lcut(s3, HMM=False))
+    #print(SentScore(config.embeddings_index, s1), SentScore(config.embeddings_index, s2), SentScore(config.embeddings_index, s3))
     result = get_result(config.data_cand_json, config.embeddings_index)
     result = cal_metric(result)
 

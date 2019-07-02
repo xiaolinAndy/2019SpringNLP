@@ -3,13 +3,8 @@ import jieba
 
 #分词
 def sent2word(line):
-	segList = jieba.lcut_for_search(line)
+	segList = jieba.lcut_for_search(line, HMM=False)
 	return segList
-#	segSentence = []
-#	for word in segList:
-#		if word != '\n':
-#			segSentence.append(word)
-#	return segSentence
 
 def singEmbed(embeddings_index, word):
 	if word in embeddings_index:
@@ -27,7 +22,6 @@ def getWordVec(wordseq, wordindex, embeddings_index, windowsize=5):
 	if tempword in embeddings_index:
 		wordVec[0] = embeddings_index[tempword]
 		loc = wordindex
-		#missing the situation that len(wordseq<5)
 		vecIn = 1
 		windowsize = min(windowsize, len(wordseq))
 		if wordindex < 2:
@@ -64,34 +58,16 @@ def calculProb(wordVec, windowsize=5):
 
 	return y.sum()
 
-#从两个句子中选一个
-def chooseSent(embeddings_index, sent1="", sent2=""):
+#sentence score
+def SentScore(embeddings_index, sent1=""):
 	wordseq1=sent2word(sent1)
-	wordseq2=sent2word(sent2)
-	#wordseq1=['何时', '？']
-	#wordseq2=['和', '时', '？']
-	#wordseq1=['只要', '出现', '问题', '旧', '要', '解决', '。']
-	#wordseq2=['只要', '出现', '问提', '就要', '解决', '。']
-	
-	wordVec1=getWordVec(wordseq1, 3, embeddings_index)
-	wordVec2=getWordVec(wordseq2, 3, embeddings_index)
-	y1=calculProb(wordVec1)
-	y2=calculProb(wordVec2)
-	import pdb
-	pdb.set_trace()
-	print('y1: ', y1)
-	print('y2: ', y2)
-	if y1>y2:
-		print('y1 is more plausible')
-		return y1
-	print('y2 is more plausible')
-	return y2
-
-
-def get_lm_score(embeddings_index, sent1=""):
-	wordseq1 = sent2word(sent1)
-	wordVec1 = getWordVec(wordseq1, 3, embeddings_index)
-	y1 = calculProb(wordVec1)
+	y1 = 0
+	num1 = len(wordseq1)
+	for tmpIn in range(0, num1):
+		wordVec1=getWordVec(wordseq1, tmpIn, embeddings_index)
+		y1 += calculProb(wordVec1)
+	y1 /= num1
+	#print('y1: ', y1)
 	return y1
 
 def getEmbed(file):
@@ -110,18 +86,15 @@ def getEmbed(file):
 		if line[0]>='A':
 			if line[0]<='Z':
 				continue
+		if line[1]=='\u3000':
+			continue
 		values = line.split()
-		#values = line
 		word = values[0]
 		coefs = np.asarray(values[1:], dtype='float32')
 		embeddings_index[word] = coefs
+		
 		count_num+=1
-		if count_num>10000:
+		if count_num>50000:
 			break
 	f.close()
 	return embeddings_index
-
-if __name__ == '__main__':
-	file = 'sgns.baidubaike.bigram-char'
-	embeddings_index = getEmbed(file)
-	print(chooseSent(embeddings_index, sent1, sent2))
