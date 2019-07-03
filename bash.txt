@@ -1,0 +1,3 @@
+--test_text data/clp14csc_release1.1/Test/CLP14_CSC_TestInput.txt --test_gt data/clp14csc_release1.1/Test/CLP14_CSC_TestTruth.txt --data_json data/sighan8_simple.json --data_seg_json data/sighan8_seg_simple.json
+
+--data_json data/sighan8_simple.json --data_seg_json data/sighan8_seg_simple.json --data_cand_json data/sighan8_cand_single_simple.json --cand_choose single
