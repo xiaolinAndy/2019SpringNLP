@@ -273,7 +273,7 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
         last_index = 0
         for i, word in enumerate(seg_list):
             # count hit mubers
-            '''if len(word) == 1 and is_chinese(word):
+            if len(word) == 1 and is_chinese(word):
                 if index in answer_index:
                     if i == 0:
                         if len(seg_list[i+1]) == 1:
@@ -300,9 +300,9 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
             if len(word) == 3 and word not in vocab_dict:
                 cand_count += 3
                 if index in answer_index or index+1 in answer_index or index+2 in answer_index:
-                    hit_count += 1'''
+                    hit_count += 1
             # numerate all candidates
-            if config.cand_choose == 'single':
+            '''if config.cand_choose == 'single':
                 if len(word) == 1 and is_chinese(word) and sample['text'][index - 1] in cfs_dict.keys():
                     # two consecutive single characters
                     if i == 0:
@@ -472,14 +472,14 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                                 hit_count += 1
                             all_cand.append([index+2, candidate])
                     if all_cand:
-                        candidates.append(all_cand)
+                        candidates.append(all_cand)'''
             index += len(word)
         print(k)
-        data[k]['cand'] = candidates
+        #data[k]['cand'] = candidates
     print(total_cand_count)
 
-    with open(save_path, 'w', encoding='utf-8') as f:
-        json.dump(data, f)
+    '''with open(save_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f)'''
 
     print(hit_count, loc_count, total_count, hit_count/total_count)
     #print(hit_count, total_count, hit_count / total_count)
@@ -502,7 +502,7 @@ def get_result(data_json, embed):
             right_index = min(max(sample_index) + 3, len(org_text))
             #org_score = SentScore(embed, org_text[left_index-1:right_index])
             org_score = LM_score([org_text[left_index-1:right_index]])[0]
-            max_score = org_score*10
+            max_score = org_score
             cand_res = None
             print(sample)
             for pos_cand in sample:
@@ -585,7 +585,7 @@ def main():
     print(len(vocab_dict), vocab_dict[15])
     with open(config.data_json, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    #make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
+    make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
     config.embeddings_index = getEmbed(config.lm)
     s1 = "人不同凡想的成就呢"
     s2 = "人不同凡响的成就呢"
@@ -594,8 +594,8 @@ def main():
     #print(jieba.lcut(s2, HMM=False))
     #print(jieba.lcut(s3, HMM=False))
     #print(SentScore(config.embeddings_index, s1), SentScore(config.embeddings_index, s2), SentScore(config.embeddings_index, s3))
-    result = get_result(config.data_cand_json, config.embeddings_index)
-    result = cal_metric(result)
+    #result = get_result(config.data_cand_json, config.embeddings_index)
+    #result = cal_metric(result)
 
 
 if __name__ == '__main__':
