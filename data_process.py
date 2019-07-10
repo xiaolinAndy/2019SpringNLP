@@ -121,42 +121,49 @@ def process_data_8(text_name, gt_name, save_name, simple):
     with open(save_name, 'w', encoding='utf-8') as f:
         json.dump(data, f)
 
+def add_dict_data_8_train(data, soup):
+    essays = soup.find_all('essay')
+    for essay in essays:
+        text = essay.find('text')
+        passages = text.find_all('passage')
+        for passage in passages:
+            id = passage.attrs['id']
+            sent = passage.string
+            text = SnowNLP(sent).han
+            if len(text) != len(text):
+                print(sent, text)
+                continue
+            data[id] = {}
+            data[id]['text'] = text
+            data[id]['answer'] = []
+        mistakes = essay.find_all('mistake')
+        for mistake in mistakes:
+            id = mistake.attrs['id']
+            loc = int(mistake.attrs['location'])
+            wrong = mistake.wrong.string
+            correct = mistake.correction.string
+            wrong = SnowNLP(wrong).han
+            correct = SnowNLP(correct).han
+            # print(str(wrong), data[id]['text'])
+            try:
+                start = data[id]['text'].index(str(wrong))
+                data[id]['answer'].append([loc, correct[loc - start - 1]])
+            except:
+                if id in data.keys():
+                    data.pop(id)
+        print(id)
+    return data
+
 def process_data_8_train(text_name, save_name, simple):
     data = {}
-    soup = BeautifulSoup(text_name, "lxml")
-    essays = soup.find_all('ESSAY')
-    for essay in essays:
-        text = essays.find('TEXT')
     with open(text_name, 'r', encoding='utf-8') as f:
-        for line in f.readlines():
-            line = line.strip()
-            id = line.split()[0][-10:-1]
-            print(id)
-            text = ''.join(line.split()[1:])
-            if simple:
-                if len(text) != len(SnowNLP(text).han):
-                    print(text)
-                    text = "想一想，台北也是我们每天在待的地方，每天在这个大都市来回穿梭，自由走动，但我们可能也不会到公车站牌旁的小巷子里有些什么，或许有一窝狗、猫，在天桥下，又有什么，或许有着一群游名，或者是一群热爱极限运动的舞者，脚踏车、滑板玩家，这些东西都等着我们去发现。"
-                    print(text)
-                else:
-                    text = SnowNLP(text).han
-            data[id] = {'text': text}
-            exit()
-        #assert len(data.items()) == 1100
-    with open(gt_name, 'r', encoding='utf-8') as f:
-        for line in f.readlines():
-            line = line.strip().split(', ')
-            answer = []
-            # extract wrong word id and replaced word
-            if len(line)[1] == '0':
-                data[line[0]]['answer'] = []
-            else:
-                for i in range(1, len(line), 2):
-                    if simple:
-                        line[i + 1] = SnowNLP(line[i+1]).han
-                    answer.append([int(line[i]), line[i+1]])
-                data[line[0]]['answer'] = answer
-        #assert len(data.items()) == 1100
+        soup = BeautifulSoup(f, "lxml")
+    add_dict_data_8_train(data, soup)
+    with open('data/sighan8csc_release1.0/Training/SIGHAN15_CSC_B2_Training.sgml', 'r', encoding='utf-8') as f:
+        soup = BeautifulSoup(f, "lxml")
+    add_dict_data_8_train(data, soup)
+
+    print(len(data.keys()))
     with open(save_name, 'w', encoding='utf-8') as f:
         json.dump(data, f)
 
@@ -484,6 +491,16 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
     print(hit_count, loc_count, total_count, hit_count/total_count)
     #print(hit_count, total_count, hit_count / total_count)
 
+def make_candidate_SVM(data, seg_data, result, cfs_dict, save_path, config):
+    for k, v in data.items():
+        cands = []
+        seg_text = seg_data[k]['seg']
+        cand_index = result[k]
+        pos = 1
+        for index in cand_index:
+            for i, word in enumerate(seg_text[index]):
+                if 
+
 # format: dict={'id': {'res': [[1, 我], [2, 你]]}}
 def get_result(data_json, embed):
     with open(data_json, 'r', encoding='utf-8') as f:
@@ -565,7 +582,7 @@ def get_args():
     parser.add_argument('--simple', type=bool, default=True)
     parser.add_argument('--data_seg_json', type=str, default='data/sighan7_seg_simple.json')
     parser.add_argument('--data_cand_json', type=str, default='data/sighan7_cand_consec_simple.json')
-    parser.add_argument('--cand_choose', type=str, default='consec')
+    parser.add_argument('--cand_choose', type=str, default='HMM')
     parser.add_argument('--lm', type=str, default='data/sgns.baidubaike.bigram-char')
     args = parser.parse_args()
     return args
@@ -574,10 +591,10 @@ def main():
     config = get_args()
     #process_data_7(config.test_text, config.test_gt, config.data_json, config.simple)
     #process_data_8(config.test_text, config.test_gt, config.data_json, config.simple)
-    #process_data_8(config.test_text, config.test_gt, config.data_json, config.simple)
+    #process_data_8_train(config.test_text, config.data_json, config.simple)
     #process_dict(config.dict, config.dict_json, config.simple)
     #process_cfs(config.cfs_pro, config.cfs_shape, config.cfs_dict, config.simple)
-    #data_seg(config.data_json, config.data_seg_json)
+    data_seg(config.data_json, config.data_seg_json)
     with open(config.cfs_dict, 'r', encoding='utf-8') as f:
         cfs_dict = json.load(f)
     with open(config.dict_json, 'r', encoding='utf-8') as f:
@@ -585,7 +602,7 @@ def main():
     print(len(vocab_dict), vocab_dict[15])
     with open(config.data_json, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
+    #make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
     config.embeddings_index = getEmbed(config.lm)
     s1 = "人不同凡想的成就呢"
     s2 = "人不同凡响的成就呢"
