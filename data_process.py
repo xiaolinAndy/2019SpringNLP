@@ -332,17 +332,17 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                     if sample['text'][index - 1] in cfs_dict.keys():
                         candidate = []
                         for cand in cfs_dict[sample['text'][index - 1]]:
-                            if cand + sample['text'][index] in vocab_dict:
-                                total_cand_count += 1
-                                candidate.append(cand)
+                            #if cand + sample['text'][index] in vocab_dict:
+                                #total_cand_count += 1
+                            candidate.append(cand)
                         if candidate:
                             all_cand.append([index, candidate])
                     if sample['text'][index] in cfs_dict.keys():
                         candidate = []
                         for cand in cfs_dict[sample['text'][index]]:
-                            if sample['text'][index - 1] + cand in vocab_dict:
-                                total_cand_count += 1
-                                candidate.append(cand)
+                            #if sample['text'][index - 1] + cand in vocab_dict:
+                                #total_cand_count += 1
+                            candidate.append(cand)
                         if candidate:
                             all_cand.append([index+1, candidate])
                     if all_cand:
@@ -352,25 +352,25 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                     if sample['text'][index - 1] in cfs_dict.keys():
                         candidate = []
                         for cand in cfs_dict[sample['text'][index - 1]]:
-                            if cand + sample['text'][index] + sample['text'][index + 1] in vocab_dict:
-                                total_cand_count += 1
-                                candidate.append(cand)
+                            #if cand + sample['text'][index] + sample['text'][index + 1] in vocab_dict:
+                                #total_cand_count += 1
+                            candidate.append(cand)
                         if candidate:
                             all_cand.append([index, candidate])
                     if sample['text'][index] in cfs_dict.keys():
                         candidate = []
                         for cand in cfs_dict[sample['text'][index]]:
-                            if sample['text'][index - 1] + cand + sample['text'][index + 1] in vocab_dict:
-                                total_cand_count += 1
-                                candidate.append(cand)
+                            #if sample['text'][index - 1] + cand + sample['text'][index + 1] in vocab_dict:
+                                #total_cand_count += 1
+                            candidate.append(cand)
                         if candidate:
                             all_cand.append([index+1, candidate])
                     if sample['text'][index + 1] in cfs_dict.keys():
                         candidate = []
                         for cand in cfs_dict[sample['text'][index + 1]]:
-                            if sample['text'][index - 1] + sample['text'][index] + cand in vocab_dict:
-                                total_cand_count += 1
-                                candidate.append(cand)
+                            #if sample['text'][index - 1] + sample['text'][index] + cand in vocab_dict:
+                                #total_cand_count += 1
+                            candidate.append(cand)
                         if candidate:
                             all_cand.append([index+2, candidate])
                     if all_cand:
@@ -413,9 +413,9 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                         if index in answer_index:
                             loc_count += 1
                         for cand in cfs_dict[sample['text'][index - 1]]:
-                            if cand + sample['text'][index] in vocab_dict:
-                                total_cand_count += 1
-                                candidate.append(cand)
+                            #if cand + sample['text'][index] in vocab_dict:
+                                #total_cand_count += 1
+                            candidate.append(cand)
                         if candidate:
                             # check for possible hit count precisely
                             if index in answer_index and answer_correction[answer_index.index(index)] in candidate:
@@ -426,9 +426,9 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                         if index + 1 in answer_index:
                             loc_count += 1
                         for cand in cfs_dict[sample['text'][index]]:
-                            if sample['text'][index - 1] + cand in vocab_dict:
-                                total_cand_count += 1
-                                candidate.append(cand)
+                            #if sample['text'][index - 1] + cand in vocab_dict:
+                                #total_cand_count += 1
+                            candidate.append(cand)
                         if candidate:
                             # check for possible hit count precisely
                             if index+1 in answer_index and answer_correction[answer_index.index(index+1)] in candidate:
@@ -443,9 +443,9 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                         if index in answer_index:
                             loc_count += 1
                         for cand in cfs_dict[sample['text'][index - 1]]:
-                            if cand + sample['text'][index] + sample['text'][index + 1] in vocab_dict:
-                                total_cand_count += 1
-                                candidate.append(cand)
+                            #if cand + sample['text'][index] + sample['text'][index + 1] in vocab_dict:
+                                #total_cand_count += 1
+                            candidate.append(cand)
                         if candidate:
                             # check for possible hit count precisely
                             if index in answer_index:
@@ -458,9 +458,9 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                         if index + 1 in answer_index:
                             loc_count += 1
                         for cand in cfs_dict[sample['text'][index]]:
-                            if sample['text'][index - 1] + cand + sample['text'][index + 1] in vocab_dict:
-                                total_cand_count += 1
-                                candidate.append(cand)
+                            #if sample['text'][index - 1] + cand + sample['text'][index + 1] in vocab_dict:
+                                #total_cand_count += 1
+                            candidate.append(cand)
                         if candidate:
                             # check for possible hit count precisely
                             if index+1 in answer_index:
@@ -473,9 +473,9 @@ def make_candidate(data, vocab_dict, cfs_dict, save_path, config):
                         if index + 2 in answer_index:
                             loc_count += 1
                         for cand in cfs_dict[sample['text'][index + 1]]:
-                            if sample['text'][index - 1] + sample['text'][index] + cand in vocab_dict:
-                                total_cand_count += 1
-                                candidate.append(cand)
+                            #if sample['text'][index - 1] + sample['text'][index] + cand in vocab_dict:
+                                #total_cand_count += 1
+                            candidate.append(cand)
                         if candidate:
                             # check for possible hit count precisely
                             if index + 2 in answer_index and answer_correction[answer_index.index(index+2)] in candidate:
@@ -500,9 +500,22 @@ def make_candidate_SVM(data, seg_data, result, cfs_dict, save_path, config):
         seg_text = seg_data[k]['seg']
         cand_index = result[k]
         pos = 1
+        pos_index = []
+        for word in seg_text:
+            pos_index.append(pos)
+            pos += len(word)
         for index in cand_index:
+            cand = []
             for i, word in enumerate(seg_text[index]):
-                if 
+                if word in cfs_dict.keys():
+                    cand.append([pos_index[index]+i, cfs_dict[word]])
+            if cand:
+                cands.append(cand)
+        data[k]['cand'] = cands
+        print(seg_text, cand_index, cands)
+
+    with open(save_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
 
 # format: dict={'id': {'res': [[1, 我], [2, 你]]}}
 def get_result(data_json, embed):
@@ -524,7 +537,7 @@ def get_result(data_json, embed):
             org_score = LM_score([org_text[left_index-1:right_index]])[0]
             max_score = org_score*10
             cand_res = None
-            print(sample)
+            #print(sample)
             for pos_cand in sample:
                 new_text = list(org_text)
                 for cand in pos_cand[1]:
@@ -538,9 +551,9 @@ def get_result(data_json, embed):
                         #cand_res = [pos_cand[0], cand, ''.join(new_text[left_index - 1:right_index]), max_score]
             if cand_res:
                 v['res'].append(cand_res)
-                print('文本窗口：', org_text[left_index - 1:right_index], org_score)
-                print('最后替换结果： ', k, cand_res)
-        print('真实结果： ', v['answer'])
+                #print('文本窗口：', org_text[left_index - 1:right_index], org_score)
+                #print('最后替换结果： ', k, cand_res)
+        #print('真实结果： ', v['answer'])
     return data
 
 def cal_metric(result):
@@ -585,8 +598,9 @@ def get_args():
     parser.add_argument('--simple', type=bool, default=True)
     parser.add_argument('--data_seg_json', type=str, default='data/sighan7_seg_simple.json')
     parser.add_argument('--data_cand_json', type=str, default='data/sighan7_cand_consec_simple.json')
-    parser.add_argument('--cand_choose', type=str, default='HMM')
+    parser.add_argument('--cand_choose', type=str, default='single')
     parser.add_argument('--lm', type=str, default='data/sgns.baidubaike.bigram-char')
+    parser.add_argument('--res_svm', type=str, default='data/sighan8_test_result.json')
     args = parser.parse_args()
     return args
 
@@ -597,7 +611,7 @@ def main():
     #process_data_8_train(config.test_text, config.data_json, config.simple)
     #process_dict(config.dict, config.dict_json, config.simple)
     #process_cfs(config.cfs_pro, config.cfs_shape, config.cfs_dict, config.simple)
-    data_seg(config.data_json, config.data_seg_json)
+    #data_seg(config.data_json, config.data_seg_json)
     with open(config.cfs_dict, 'r', encoding='utf-8') as f:
         cfs_dict = json.load(f)
     with open(config.dict_json, 'r', encoding='utf-8') as f:
@@ -605,7 +619,12 @@ def main():
     print(len(vocab_dict), vocab_dict[15])
     with open(config.data_json, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    #make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
+    with open(config.data_seg_json, 'r', encoding='utf-8') as f:
+        seg_data = json.load(f)
+    with open(config.res_svm, 'r', encoding='utf-8') as f:
+        res_svm = json.load(f)
+    make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
+    #make_candidate_SVM(data, seg_data, res_svm, cfs_dict, config.data_cand_json, config)
     config.embeddings_index = getEmbed(config.lm)
     s1 = "人不同凡想的成就呢"
     s2 = "人不同凡响的成就呢"
