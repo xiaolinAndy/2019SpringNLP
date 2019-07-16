@@ -626,12 +626,6 @@ def main():
     make_candidate(data, vocab_dict, cfs_dict, config.data_cand_json, config)
     #make_candidate_SVM(data, seg_data, res_svm, cfs_dict, config.data_cand_json, config)
     config.embeddings_index = getEmbed(config.lm)
-    s1 = "人不同凡想的成就呢"
-    s2 = "人不同凡响的成就呢"
-    s3 = "人不同凡想怕成就呢"
-    #print(jieba.lcut(s1, HMM=False))
-    #print(jieba.lcut(s2, HMM=False))
-    #print(jieba.lcut(s3, HMM=False))
     #print(SentScore(config.embeddings_index, s1), SentScore(config.embeddings_index, s2), SentScore(config.embeddings_index, s3))
     result = get_result(config.data_cand_json, config.embeddings_index)
     result = cal_metric(result)
