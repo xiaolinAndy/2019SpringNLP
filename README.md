@@ -29,3 +29,17 @@ Some of the key options are:
 +  data_seg_json : the segmented format of data_json
 +  res_svm : the candidate chosen by svm 
 +  save_file : the saving path of final result
+
+Note: If you use word2vec as language model you need to download the related word2vec data from https://pan.baidu.com/s/1oM6XFPjZWoIYwO83F_uTnw (password: 7umy) and put it into `data/` folder.
+
+## Requirments:
+
++ python3
++ jieba
++ bs4
++ snownlp
++ pickle
++ numpy
++ tensorflow
++ json
++ sklearn
